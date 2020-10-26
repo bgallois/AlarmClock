@@ -20,6 +20,7 @@ package com.better.alarm.alert;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
@@ -28,6 +29,9 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 import androidx.fragment.app.FragmentActivity;
 
@@ -66,6 +70,11 @@ public class AlarmAlertFullScreen extends FragmentActivity {
     private final Prefs sp = InjectKt.globalInject(Prefs.class).getValue();
     private final Logger logger = InjectKt.globalLogger("AlarmAlertFullScreen").getValue();
     private final DynamicThemeHandler dynamicThemeHandler = InjectKt.globalInject(DynamicThemeHandler.class).getValue();
+    LuminositySensor luminositySensor = null;
+    private float m_luxThresh;
+    private Timer timer;
+    private TimerTask timerTask;
+
 
     protected Alarm mAlarm;
 
@@ -78,6 +87,8 @@ public class AlarmAlertFullScreen extends FragmentActivity {
     protected void onCreate(Bundle icicle) {
         setTheme(dynamicThemeHandler.getIdForName(getClassName()));
         super.onCreate(icicle);
+
+        luminositySensor = new LuminositySensor(this);
 
         if (getResources().getBoolean(R.bool.isTablet)) {
             // preserve initial rotation and disable rotation change
@@ -93,6 +104,7 @@ public class AlarmAlertFullScreen extends FragmentActivity {
         final int id = getIntent().getIntExtra(Intents.EXTRA_ID, -1);
         try {
             mAlarm = alarmsManager.getAlarm(id);
+            m_luxThresh = Float.parseFloat(mAlarm.getGetLuxValue());
 
             final Window win = getWindow();
             win.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
@@ -107,13 +119,12 @@ public class AlarmAlertFullScreen extends FragmentActivity {
 
             updateLayout();
 
-            // Register to get the alarm killed/snooze/dismiss intent.
+
             subscription = store.getEvents()
                     .filter(new Predicate<Event>() {
                         @Override
                         public boolean test(Event event) throws Exception {
-                            return (event instanceof Event.SnoozedEvent && ((Event.SnoozedEvent) event).getId() == id)
-                                    || (event instanceof Event.DismissEvent && ((Event.DismissEvent) event).getId() == id)
+                            return (event instanceof Event.DismissEvent && ((Event.DismissEvent) event).getId() == id)
                                     || (event instanceof Event.Autosilenced && ((Event.Autosilenced) event).getId() == id);
                         }
                     }).subscribe(new Consumer<Event>() {
@@ -147,44 +158,6 @@ public class AlarmAlertFullScreen extends FragmentActivity {
 
         setContentView(inflater.inflate(getLayoutResId(), null));
 
-        /*
-         * snooze behavior: pop a snooze confirmation view, kick alarm manager.
-         */
-        final Button snooze = (Button) findViewById(R.id.alert_button_snooze);
-        snooze.requestFocus();
-        snooze.setOnClickListener(new Button.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                snoozeIfEnabledInSettings();
-            }
-        });
-
-        snooze.setOnLongClickListener(new Button.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                if (isSnoozeEnabled()) {
-                    disposableDialog = TimePickerDialogFragment.showTimePicker(getSupportFragmentManager())
-                            .subscribe(new Consumer<Optional<PickedTime>>() {
-                                @Override
-                                public void accept(@NonNull Optional<PickedTime> picked) {
-                                    if (picked.isPresent()) {
-                                        mAlarm.snooze(picked.get().getHour(), picked.get().getMinute());
-                                    } else {
-                                        AlarmAlertFullScreen.this.sendBroadcast(new Intent(Intents.ACTION_DEMUTE));
-                                    }
-                                }
-                            });
-                    store.getEvents().onNext(new Event.MuteEvent());
-                    new android.os.Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            store.getEvents().onNext(new Event.DemuteEvent());
-                        }
-                    }, 10000);
-                }
-                return true;
-            }
-        });
 
         /* dismiss button: close notification */
         final Button dismissButton = (Button) findViewById(R.id.alert_button_dismiss);
@@ -192,8 +165,8 @@ public class AlarmAlertFullScreen extends FragmentActivity {
             @Override
             public void onClick(View v) {
                 if (longClickToDismiss) {
-                    dismissButton.setText(getString(R.string.alarm_alert_hold_the_button_text));
-                } else {
+                    dismissButton.setText(getString(R.string.alarm_alert_hold_the_button_text) + "\n" + Float.toString(luminositySensor.getLux()) + " / " + Float.toString(m_luxThresh));
+                } else if (luminositySensor.getLux() > m_luxThresh) {
                     dismiss();
                 }
             }
@@ -202,8 +175,14 @@ public class AlarmAlertFullScreen extends FragmentActivity {
         dismissButton.setOnLongClickListener(new Button.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                dismiss();
-                return true;
+                if (luminositySensor.getLux() > m_luxThresh) {
+                    dismiss();
+                    return true;
+                }
+                else {
+                    dismissButton.setText(Float.toString(luminositySensor.getLux()) + " / " + Float.toString(m_luxThresh));
+                    return false;
+                }
             }
         });
 
@@ -211,12 +190,6 @@ public class AlarmAlertFullScreen extends FragmentActivity {
         setTitle();
     }
 
-    // Attempt to snooze this alert.
-    private void snoozeIfEnabledInSettings() {
-        if (isSnoozeEnabled()) {
-            alarmsManager.snooze(mAlarm);
-        }
-    }
 
     // Dismiss the alarm.
     private void dismiss() {
@@ -224,9 +197,6 @@ public class AlarmAlertFullScreen extends FragmentActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
     }
 
-    private boolean isSnoozeEnabled() {
-        return sp.getSnoozeDuration().getValue() != -1;
-    }
 
     /**
      * this is called when a second alarm is triggered while a previous alert
@@ -253,17 +223,31 @@ public class AlarmAlertFullScreen extends FragmentActivity {
         super.onResume();
         longClickToDismiss = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(LONGCLICK_DISMISS_KEY,
                 LONGCLICK_DISMISS_DEFAULT);
-
-        Button snooze = findViewById(R.id.alert_button_snooze);
-        View snoozeText = findViewById(R.id.alert_text_snooze);
-        if (snooze != null) snooze.setEnabled(isSnoozeEnabled());
-        if (snoozeText != null) snoozeText.setEnabled(isSnoozeEnabled());
+        luminositySensor.register();
+        timer = new Timer();
+        timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                float luminosity = luminositySensor.getLux();
+                TextView textView = findViewById(R.id.alarm_alert_label);
+                textView.setText(Float.toString(luminosity) + " lx");
+                if (luminosity > m_luxThresh) {
+                    textView.setTextColor(getResources().getColor(R.color.mat_green));
+                }
+                else {
+                    textView.setTextColor(getResources().getColor(R.color.red));
+                }
+            }
+        };
+        timer.schedule(timerTask, 500, 500);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         disposableDialog.dispose();
+        timer.cancel();
+        luminositySensor.unregister();
     }
 
     @Override

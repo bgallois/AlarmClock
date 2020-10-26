@@ -80,6 +80,8 @@ class Columns : BaseColumns {
          *
          */
         const val MESSAGE = "message"
+        const val LUX = "lux"
+
 
         /**
          * Audio alert to play when alarm triggers
@@ -114,7 +116,7 @@ class Columns : BaseColumns {
         const val DEFAULT_SORT_ORDER = "$HOUR, $MINUTES ASC"
 
         @JvmField
-        val ALARM_QUERY_COLUMNS = arrayOf(BaseColumns._ID, HOUR, MINUTES, DAYS_OF_WEEK, ALARM_TIME, ENABLED, VIBRATE, MESSAGE, ALERT, PREALARM, STATE)
+        val ALARM_QUERY_COLUMNS = arrayOf(BaseColumns._ID, HOUR, MINUTES, DAYS_OF_WEEK, ALARM_TIME, ENABLED, VIBRATE, MESSAGE, ALERT, PREALARM, STATE, LUX)
 
         /**
          * These save calls to cursor.getColumnIndexOrThrow() THEY MUST BE KEPT
@@ -131,5 +133,6 @@ class Columns : BaseColumns {
         const val ALARM_ALERT_INDEX = 8
         const val ALARM_PREALARM_INDEX = 9
         const val ALARM_STATE_INDEX = 10
+        const val ALARM_LUX_INDEX = 11
     }
 }

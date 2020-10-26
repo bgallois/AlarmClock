@@ -352,6 +352,7 @@ class AlarmsListActivity : AppCompatActivity() {
                                     isPrealarm = savedInstanceState.getBoolean("isPrealarm"),
                                     alarmtone = Alarmtone.fromString(savedInstanceState.getString("alarmtone")),
                                     label = savedInstanceState.getString("label") ?: "",
+                                    luxValue = savedInstanceState.getString("luxValue") ?: "",
                                     isVibrate = true,
                                     state = savedInstanceState.getString("state") ?: "",
                                     nextTime = Calendar.getInstance()

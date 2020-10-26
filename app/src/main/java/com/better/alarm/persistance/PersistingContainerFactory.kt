@@ -76,7 +76,8 @@ class PersistingContainerFactory(private val calendars: Calendars, private val m
                 label = c.getString(Columns.ALARM_MESSAGE_INDEX) ?: "",
                 alarmtone = Alarmtone.fromString(c.getString(Columns.ALARM_ALERT_INDEX)),
                 state = c.getString(Columns.ALARM_STATE_INDEX),
-                nextTime = calendars.now().apply { timeInMillis = c.getLong(Columns.ALARM_TIME_INDEX) }
+                nextTime = calendars.now().apply { timeInMillis = c.getLong(Columns.ALARM_TIME_INDEX) },
+                luxValue = c.getString(Columns.ALARM_LUX_INDEX) ?: ""
         )
     }
 
@@ -96,7 +97,8 @@ class PersistingContainerFactory(private val calendars: Calendars, private val m
                     label = "",
                     alarmtone = Alarmtone.Default(),
                     state = "",
-                    nextTime = now
+                    nextTime = now,
+                    luxValue = ""
             )
 
             //generate a new id
@@ -118,6 +120,7 @@ class PersistingContainerFactory(private val calendars: Calendars, private val m
             put(Columns.PREALARM, isPrealarm)
             put(Columns.ALARM_TIME, nextTime.timeInMillis)
             put(Columns.STATE, state)
+            put(Columns.LUX, luxValue)
         }
     }
 }

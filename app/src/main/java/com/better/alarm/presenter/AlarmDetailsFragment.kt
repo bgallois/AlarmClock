@@ -76,6 +76,7 @@ class AlarmDetailsFragment : Fragment() {
     private val alarmsListActivity by lazy { activity as AlarmsListActivity }
     private val store: UiStore by globalInject()
     private val mLabel: EditText by lazy { fragmentView.findViewById(R.id.details_label) as EditText }
+    private val mLuxValue: EditText by lazy { fragmentView.findViewById(R.id.details_luxValue) as EditText }
     private val rowHolder: RowHolder by lazy { RowHolder(fragmentView.findViewById(R.id.details_list_row_container), alarmId, prefs.layout()) }
     private val mRingtoneRow by lazy { fragmentView.findViewById(R.id.details_ringtone_row) as LinearLayout }
     private val mRingtoneSummary by lazy { fragmentView.findViewById(R.id.details_ringtone_summary) as TextView }
@@ -208,6 +209,24 @@ class AlarmDetailsFragment : Fragment() {
 
         mLabel.addTextChangedListener(TextWatcherIR())
 
+        class TextWatcherLX : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                editor.take(1)
+                        .filter { it.luxValue != s.toString() }
+                        .subscribe {
+                            modify("Luminosity") { prev -> prev.copy(luxValue = s.toString(), isEnabled = true) }
+                        }
+                        .addToDisposables()
+            }
+        }
+        mLuxValue.addTextChangedListener(TextWatcherLX())
+
         return view
     }
 
@@ -252,6 +271,12 @@ class AlarmDetailsFragment : Fragment() {
 
                     if (editor.label != mLabel.text.toString()) {
                         mLabel.setText(editor.label)
+                    }
+                    if (editor.luxValue != mLuxValue.text.toString()) {
+                        mLuxValue.setText(editor.luxValue)
+                    }
+                    if (mLuxValue.text.toString() == ""){
+                        mLuxValue.setText("1000");
                     }
                 })
 

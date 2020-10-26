@@ -111,10 +111,41 @@
             </LinearLayout>
 
 
+            <TextView
+                android:id="@+id/text_lux"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_gravity="center|left"
+                android:layout_weight="1"
+                android:text="Luminosity threshold (lx)"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dip"
                 android:background="?android:attr/dividerHorizontal" />
+
+            <EditText
+                android:id="@+id/details_luxValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:hint="1000"
+                android:defaultValue="1000"
+                android:minHeight="68dip"
+                android:singleLine="true"
+                android:inputType = "number"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <TextView
+                android:id="@+id/textView4"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_gravity="center|left"
+                android:layout_weight="1"
+                android:text="Label
+"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
 
             <EditText xmlns:android="http://schemas.android.com/apk/res/android"
                 android:id="@+id/details_label"

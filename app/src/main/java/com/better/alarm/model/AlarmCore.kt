@@ -805,6 +805,7 @@ class AlarmCore(
 
     override val id: Int get() = container.id
     override val labelOrDefault: String get() = container.label
+    override val getLuxValue: String get() = container.luxValue
     override val alarmtone: Alarmtone get() = container.alarmtone
 
     override fun toString(): String {

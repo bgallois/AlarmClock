@@ -1,3 +1,9 @@
+repositories {
+    google()
+    jcenter()
+    mavenCentral()
+}
+
 plugins {
     id("com.android.application")
     kotlin("android")

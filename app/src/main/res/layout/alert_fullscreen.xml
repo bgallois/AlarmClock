@@ -69,15 +69,6 @@
                     android:textStyle="bold" />
             </com.better.alarm.view.DigitalClock>
 
-            <TextView
-                android:id="@+id/alert_text_snooze"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="match_parent"
-                android:layout_height="0px"
-                android:layout_weight="1"
-                android:clickable="false"
-                android:text="@string/alarm_alert_snooze_text"
-                android:textSize="24sp" />
         </LinearLayout>
 
         <Button

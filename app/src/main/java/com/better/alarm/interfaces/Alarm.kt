@@ -16,6 +16,7 @@ interface Alarm {
     fun edit(func: AlarmValue.() -> AlarmValue)
     val id: Int
     val labelOrDefault: String
+    val getLuxValue: String
     val alarmtone: Alarmtone
     val data: AlarmValue
 }
